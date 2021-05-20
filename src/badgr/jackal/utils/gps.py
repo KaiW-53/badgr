@@ -41,11 +41,11 @@ class GPSPlotter(object):
     """
 
     def __init__(self,
-                 nw_latlong=(37.915585, -122.336621),
-                 se_latlong=(37.914514, -122.334064),
+                 nw_latlong=(39.328555, -76.621903),
+                 se_latlong=(39.327793, -76.620604),
                  zoom=19,
                  satellite_img_fname=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rfs_satellite.png'),
-                 google_maps_api_key=None):
+                 google_maps_api_key="AIzaSyAd-cxHGRZ_j-VtrZ_tw7W9oGuOe5KKJmU"):
         self.nw_latlong = nw_latlong
         self.se_latlong = se_latlong
         self._zoom = zoom
@@ -81,7 +81,9 @@ class GPSPlotter(object):
         return pixel
 
     def utm_to_coordinate(self, utm):
-        return self.latlong_to_coordinate(utm_to_latlong(utm))
+        # NOTE: zone number
+        # return self.latlong_to_coordinate(utm_to_latlong(utm))
+        return self.latlong_to_coordinate(utm_to_latlong(utm, zone_number=18))
 
     def compass_bearing_to_dcoord(self, compass_bearing):
         offset = -np.pi / 2.

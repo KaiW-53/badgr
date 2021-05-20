@@ -15,12 +15,11 @@ from badgr.utils.python_utils import AttrDict as d
 
 def get_dataset_params(env_spec, horizon, batch_size):
     all_tfrecord_folders = [
-        os.path.join(FileManager.data_dir, 'tfrecords_collision/{0}-2019_horizon_{1}'.format(f, horizon)) for f in
-        ['08-02', '08-06', '08-08', '08-13', '08-15', '08-18', '08-20', '08-27', '08-29', '09-09', '09-12', '09-17',
-         '09-19', '10-20', '10-24', '10-31']
-        ]
-    train_tfrecord_folders = [fname for fname in all_tfrecord_folders if '09-12' not in fname],
-    holdout_tfrecord_folders = [fname for fname in all_tfrecord_folders if '09-12' in fname],
+        os.path.join(FileManager.badgr_dir, 'badgr_test/data/circles/{0}'.format(f)) for f in
+        ['21-03-17', '21-04-02', '21-04-25', 'holdout']
+    ]
+    train_tfrecord_folders = [fname for fname in all_tfrecord_folders if 'holdout' not in fname],
+    holdout_tfrecord_folders = [fname for fname in all_tfrecord_folders if 'holdout' in fname],
 
     kwargs_train = d(
         rebalance_key='outputs/collision/close',
@@ -190,7 +189,7 @@ def get_params():
     dataset_params = get_dataset_params(env_spec, horizon, trainer_params.batch_size)
 
     return d(
-        exp_name='collision_position',
+        exp_name='collision_position-own-all',
 
         dataset=dataset_params,
         model=model_params,

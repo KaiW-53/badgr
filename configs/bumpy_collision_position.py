@@ -22,7 +22,7 @@ def get_model_params():
             ),
             ckptnums=(
                 4,
-                8,
+                4,
             )
         )
 
@@ -100,7 +100,7 @@ def get_planner_params(env_spec):
             action_selection_limits=d(
                 commands=d(
                     angular_velocity=(-1., 1.),
-                    linear_velocity=(0.8, 0.8),
+                    linear_velocity=(2, 2),
                 )
             ),
             cost_fn=cost_fn,
@@ -122,7 +122,7 @@ def get_env_params(env_spec):
 
             debug=True,
             debug_normalize_cost_colors=False,
-            debug_color_cost_key='collision',
+            debug_color_cost_key='total',
         )
     )
 

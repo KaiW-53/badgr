@@ -32,7 +32,8 @@ class JackalSubscriber(object):
         ('/imu_um7/mag', Vector3Stamped),
         ('/imu_um7/data', Imu),
 
-        ('/navsat/fix', NavSatFix),
+        # ('/navsat/fix', NavSatFix),
+        ('/gps/fix', NavSatFix),
         ('/navsat/vel', TwistStamped),
 
         ('/odometry/filtered', Odometry),
@@ -40,70 +41,74 @@ class JackalSubscriber(object):
 
         ('/cmd_vel', Twist),
 
-        ('/cam_left/image_raw', Image),
+        # ('/cam_left/image_raw', Image),
+        ('/camera/color/image_raw', Image),
         ('/cam_right/image_raw', Image),
         ('/teraranger_evo_thermal/raw_temp_array', Float64MultiArray),
 
         ('/android/illuminance', Illuminance),
 
-        ('/bluetooth_teleop/joy', Joy)
-    ))
+        ('/bluetooth_teleop/joy', Joy),
+
+        ('/scan', LaserScan)
+        ))
 
     names_topics_funcs = (
-        ('collision/any', '/collision/any', lambda msg: msg.data),
-        ('collision/physical', '/collision/physical', lambda msg: msg.data),
-        ('collision/close', '/collision/close', lambda msg: msg.data),
-        ('collision/flipped', '/collision/flipped', lambda msg: msg.data),
-        ('collision/stuck', '/collision/stuck', lambda msg: msg.data),
-        ('collision/outside_geofence', '/collision/outside_geofence', lambda msg: msg.data),
+        # ('collision/any', '/collision/any', lambda msg: msg.data),
+        # ('collision/physical', '/collision/physical', lambda msg: msg.data),
+        # ('collision/close', '/collision/close', lambda msg: msg.data),
+        ('collision/close', '/scan', lambda msg: np.min(msg.ranges[144:-144]) < 1),
+        # ('collision/flipped', '/collision/flipped', lambda msg: msg.data),
+        # ('collision/stuck', '/collision/stuck', lambda msg: msg.data),
+        # ('collision/outside_geofence', '/collision/outside_geofence', lambda msg: msg.data),
 
-        ('lidar', '/rplidar/scan', lambda msg: msg.ranges),
+        # ('lidar', '/rplidar/scan', lambda msg: msg.ranges),
 
-        ('imu/compass_bearing', '/imu_um7/compass_bearing', lambda msg: msg.data),
-        ('imu/magnetometer', '/imu_um7/mag', lambda msg: np.array([msg.vector.x,
-                                                     msg.vector.y,
-                                                     msg.vector.z])),
-        ('imu/linear_acceleration', '/imu_um7/data', lambda msg: np.array([msg.linear_acceleration.x,
-                                                            msg.linear_acceleration.y,
-                                                            msg.linear_acceleration.z])),
-        ('imu/angular_velocity', '/imu_um7/data', lambda msg: np.array([msg.angular_velocity.x,
-                                                         msg.angular_velocity.y,
-                                                         msg.angular_velocity.z])),
-        ('gps/is_fixed', '/navsat/fix', lambda msg: msg.status.status >= NavSatStatus.STATUS_FIX),
-        ('gps/latlong', '/navsat/fix', lambda msg: np.array([msg.latitude, msg.longitude])),
-        ('gps/utm', '/navsat/fix', lambda msg: latlong_to_utm(np.array([msg.latitude, msg.longitude]))),
-        ('gps/altitude', '/navsat/fix', lambda msg: msg.altitude),
-        ('gps/velocity', '/navsat/vel', lambda msg: np.array([msg.twist.linear.x,
-                                                              msg.twist.linear.y,
-                                                              msg.twist.linear.z])),
+        # ('imu/compass_bearing', '/imu_um7/compass_bearing', lambda msg: msg.data),
+        # ('imu/magnetometer', '/imu_um7/mag', lambda msg: np.array([msg.vector.x,
+        #                                              msg.vector.y,
+        #                                              msg.vector.z])),
+        # ('imu/linear_acceleration', '/imu_um7/data', lambda msg: np.array([msg.linear_acceleration.x,
+        #                                                     msg.linear_acceleration.y,
+        #                                                     msg.linear_acceleration.z])),
+        # ('imu/angular_velocity', '/imu_um7/data', lambda msg: np.array([msg.angular_velocity.x,
+        #                                                  msg.angular_velocity.y,
+        #                                                  msg.angular_velocity.z])),
+        # ('gps/is_fixed', '/navsat/fix', lambda msg: msg.status.status >= NavSatStatus.STATUS_FIX),
+        # ('gps/latlong', '/navsat/fix', lambda msg: np.array([msg.latitude, msg.longitude])),
+        ('gps/latlong', '/gps/fix', lambda msg: np.array([msg.latitude, msg.longitude])),
+        # ('gps/utm', '/navsat/fix', lambda msg: latlong_to_utm(np.array([msg.latitude, msg.longitude]))),
+        ('gps/utm', '/gps/fix', lambda msg: latlong_to_utm(np.array([msg.latitude, msg.longitude]))),
+        # ('gps/altitude', '/navsat/fix', lambda msg: msg.altitude),
+        # ('gps/velocity', '/navsat/vel', lambda msg: np.array([msg.twist.linear.x,
+        #                                                       msg.twist.linear.y,
+        #                                                       msg.twist.linear.z])),
+        ('jackal/position', '/odometry/filtered',
+         lambda msg: np.array([msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z])),
+        ('jackal/yaw', '/odometry/filtered', lambda msg: np.arctan2(2 * msg.pose.pose.orientation.w * msg.pose.pose.orientation.z, 1 - 2 *
+                                                                    msg.pose.pose.orientation.z * msg.pose.pose.orientation.z)),
+        # ('jackal/linear_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.linear.x),
+        # ('jackal/angular_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.angular.z),
+        # ('jackal/imu/linear_acceleration', '/imu/data_raw', lambda msg: np.array([msg.linear_acceleration.x,
+        #                                                            msg.linear_acceleration.y,
+        #                                                            msg.linear_acceleration.z])),
+        # ('jackal/imu/angular_velocity', '/imu/data_raw', lambda msg: np.array([msg.angular_velocity.x,
+        #                                                         msg.angular_velocity.y,
+        #                                                         msg.angular_velocity.z])),
 
-        ('jackal/position', '/odometry/filtered', lambda msg: np.array([msg.pose.pose.position.x,
-                                                    msg.pose.pose.position.y,
-                                                    msg.pose.pose.position.z])),
-        ('jackal/yaw', '/odometry/filtered', lambda msg: np.arctan2(2*msg.pose.pose.orientation.w *
-                                                msg.pose.pose.orientation.z,
-                                                1 - 2 * msg.pose.pose.orientation.z *
-                                                msg.pose.pose.orientation.z)),
-        ('jackal/linear_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.linear.x),
-        ('jackal/angular_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.angular.z),
-        ('jackal/imu/linear_acceleration', '/imu/data_raw', lambda msg: np.array([msg.linear_acceleration.x,
-                                                                   msg.linear_acceleration.y,
-                                                                   msg.linear_acceleration.z])),
-        ('jackal/imu/angular_velocity', '/imu/data_raw', lambda msg: np.array([msg.angular_velocity.x,
-                                                                msg.angular_velocity.y,
-                                                                msg.angular_velocity.z])),
+        # ('commands/linear_velocity', '/cmd_vel', lambda msg: msg.linear.x),
+        # ('commands/angular_velocity', '/cmd_vel', lambda msg: msg.angular.z),
+        # ('commands/linear_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.linear.x),
+        # ('commands/angular_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.angular.z),
 
-        ('commands/linear_velocity', '/cmd_vel', lambda msg: msg.linear.x),
-        ('commands/angular_velocity', '/cmd_vel', lambda msg: msg.angular.z),
+        # ('images/rgb_left', '/cam_left/image_raw', lambda msg: numpify_image_msg(msg)),
+        ('images/rgb_left', '/camera/color/image_raw', lambda msg: numpify_image_msg(msg)),
+        # ('images/rgb_right', '/cam_left/image_raw', lambda msg: numpify_image_msg(msg)),
+        # ('images/thermal', '/teraranger_evo_thermal/raw_temp_array', lambda msg: np.fliplr(np.array(msg.data).reshape(32, 32))),
 
-        ('images/rgb_left', '/cam_left/image_raw', lambda msg: numpify_image_msg(msg)),
-        ('images/rgb_right', '/cam_left/image_raw', lambda msg: numpify_image_msg(msg)),
-        ('images/thermal', '/teraranger_evo_thermal/raw_temp_array',
-         lambda msg: np.fliplr(np.array(msg.data).reshape(32, 32))),
+        # ('android/illuminance', '/android/illuminance', lambda msg: msg.illuminance),
 
-        ('android/illuminance', '/android/illuminance', lambda msg: msg.illuminance),
-
-        ('joy', '/bluetooth_teleop/joy', lambda msg: msg)
+        # ('joy', '/bluetooth_teleop/joy', lambda msg: msg)
     )
 
     names_to_topics = {name: topic for name, topic, _ in names_topics_funcs}

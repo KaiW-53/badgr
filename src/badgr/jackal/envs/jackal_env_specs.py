@@ -11,30 +11,13 @@ class JackalEnvSpec(EnvSpec):
         super(JackalEnvSpec, self).__init__(
             names_shapes_limits_dtypes=(
                 ('images/rgb_left', (96, 128, 3), (0, 255), np.uint8),
-                ('images/rgb_right', (96, 128, 3), (0, 255), np.uint8),
-                ('images/thermal', (32, 32), (-1, 1), np.float32), # TODO: don't know good limits
-                ('lidar', (360,), (0., 12.), np.float32),
                 ('collision/close', (1,), (0, 1), np.bool),
-                ('collision/flipped', (1,), (0, 1), np.bool),
-                ('collision/stuck', (1,), (0, 1), np.bool),
-                ('collision/any', (1,), (0, 1), np.bool),
-                ('gps/is_fixed', (1,), (0, 1), np.float32),
-                ('gps/latlong', (2,), (0, 1), np.float32),
-                ('gps/utm', (2,), (0, 1), np.float32),
-                ('imu/angular_velocity', (3,), (-1.0 * np.pi, 1.0 * np.pi), np.float32),
-                ('imu/compass_bearing', (1,), (-np.pi, np.pi), np.float32),
-                ('imu/linear_acceleration', (3,), ((-1., -1., 9.81-1.), (1., 1., 9.81+1.)), np.float32),
-                ('jackal/angular_velocity', (1,), (-1.0 * np.pi, 1.0 * np.pi), np.float32),
-                ('jackal/linear_velocity', (1,), (-1., 1.), np.float32),
-                ('jackal/imu/angular_velocity', (3,), (-1.0 * np.pi, 1.0 * np.pi), np.float32),
-                ('jackal/imu/linear_acceleration', (3,), ((-1., -1., 9.81-1.), (1., 1., 9.81+1.)), np.float32),
                 ('jackal/position', (3,), (-0.5, 0.5), np.float32),
                 ('jackal/yaw', (1,), (-np.pi, np.pi), np.float32),
-                ('android/illuminance', (1,), (0., 200.), np.float32),
                 ('bumpy', (1,), (0, 1), np.bool),
-
-                ('commands/angular_velocity', (1,), (-1.0, 1.0), np.float32),
-                ('commands/linear_velocity', (1,), (0.75, 1.25), np.float32)
+                # NOTE: eval limit has to change correspondingly
+                ('commands/angular_velocity', (1,), (-1.5, 1.5), np.float32),
+                ('commands/linear_velocity', (1,), (0.0, 3.0), np.float32)
             )
         )
 
@@ -86,7 +69,9 @@ class JackalEnvSpec(EnvSpec):
             return np.array([self.process_image(name, im_i) for im_i in image])
 
         if name in ('images/rgb_left', 'images/rgb_right'):
-            image = imrectify(image, self._K, self._D, balance=self._balance)
+            # NOTE: Does not require rectify image
+            # image = imrectify(image, self._K, self._D, balance=self._balance)
+            pass
 
         return super(JackalEnvSpec, self).process_image(name, image)
 
@@ -113,19 +98,8 @@ class JackalPositionCollisionEnvSpec(JackalEnvSpec):
 
             'jackal/position',
             'jackal/yaw',
-            'jackal/angular_velocity',
-            'jackal/linear_velocity',
 
-            'jackal/imu/angular_velocity',
-            'jackal/imu/linear_acceleration',
-            'imu/angular_velocity',
-            'imu/linear_acceleration',
-
-            'imu/compass_bearing',
-            'gps/latlong',
-
-            'collision/close',
-            'collision/stuck'
+            'collision/close',  # NOTE: only required for training
         ]
         if not self._left_image_only:
             names.append('images/rgb_right')

@@ -36,8 +36,8 @@ class JackalEnv(Env):
         plt.rcParams["font.weight"] = "bold"
         plt.rcParams["axes.labelweight"] = "bold"
 
-        self._debug_fig, (ax_sat, ax_satzoom, ax_fpv, ax_egobirdseye, ax_steer, ax_speed) = \
-            plt.subplots(1, 6, figsize=(35, 4))
+        self._debug_fig, ((ax_sat, ax_satzoom, ax_fpv), (ax_egobirdseye, ax_steer, ax_speed)) = \
+            plt.subplots(2, 3, figsize=(35, 10))
 
         self._gps_plotter = GPSPlotter()
 
@@ -77,13 +77,12 @@ class JackalEnv(Env):
     def _setup_ros(self):
         rospy.init_node('jackal_position_only_env', anonymous=True)
         subscribe_names = set(self.spec.observation_names)
-        subscribe_names.add('collision/any')
+        # subscribe_names.add('collision/any')
         subscribe_names.add('gps/utm')
-        subscribe_names.add('joy')
+        # subscribe_names.add('joy')
         self._jackal_subscriber = JackalSubscriber(names=subscribe_names)
 
-        rospy.Subscriber('/goal_intermediate_latlong', Pose2D, callback=self._goal_callback)
-        self._goal_latlong = np.array([37.915021, -122.334439]) # default to next to the bathroom
+        self._goal_latlong = np.array([39.327793, -76.620604])
 
     def _goal_callback(self, msg):
         self._goal_latlong = np.array([msg.x, msg.y])
@@ -131,12 +130,12 @@ class JackalEnv(Env):
 
     def _get_done(self):
         names = [
-            'collision/any',
+            # 'collision/any',
             'gps/latlong',
-            'joy'
+            # 'joy'
         ]
         obs = AttrDict.from_dict(self._jackal_subscriber.get(names=names))
-        is_collision = obs.collision.any
+        is_collision = False #NOTE obs.collision.any
         is_close_to_goal = np.linalg.norm(latlong_to_utm(self._goal_latlong) - latlong_to_utm(obs.gps.latlong)) < 2.0
         return is_collision or is_close_to_goal
 
@@ -155,7 +154,8 @@ class JackalEnv(Env):
 
         x_list, y_list = [], []
         for pos in positions:
-            yaw = obs.imu.compass_bearing - 0.5 * np.pi  # so that east is 0 degrees
+            # yaw = obs.imu.compass_bearing - 0.5 * np.pi  # so that east is 0 degrees
+            yaw = -obs.jackal.yaw
             R = yaw_rotmat(yaw)
             pos = np.hstack((pos, np.zeros([len(pos), 1])))
 
@@ -271,7 +271,7 @@ class JackalEnv(Env):
         speeds[0] = get_action.action.commands.linear_velocity
         self._pyblit_speed_bar.draw(np.arange(len(speeds)), speeds)
         ax = self._pyblit_speed_ax.ax
-        ax.set_ylim((0, 1.6))
+        ax.set_ylim((0, 3))
         self._pyblit_speed_ax.draw()
 
     def _step_debug(self, get_action, obs, goal, use_per_timestep_costs=True):
@@ -314,6 +314,11 @@ class JackalEnv(Env):
         else:
             colors = plt.cm.autumn_r(np.clip(color_costs, 0., 1.))
         colors = np.reshape(colors, (batch_size, horizon, -1))
+
+        # Highlight the minimal cost
+        blues = np.zeros((8, 4))
+        blues[:, 2:] = 1
+        colors[-1] = blues
 
         self._plot_satellite(obs, positions, colors, goal)
         self._plot_fpv(obs, positions, colors)

@@ -63,8 +63,8 @@ class Model(tf.keras.Model):
     def _process_inputs(self, inputs):
         """
         Separate out observations/actions and normalize
-        
-        :param inputs (AttrDict): 
+
+        :param inputs (AttrDict):
         :return: obs_ims (AttrDict), obs_vecs (AttrDict), actions (AttrDict)
         """
         ### separate out observations/actions
@@ -182,13 +182,13 @@ class Model(tf.keras.Model):
 
         # outputs
         outputs_concat = self._output_model(rnn_outputs, training=training)
-        
+
         return outputs_concat
 
     def _get_outputs(self, preprocess_outputs, inputs, denormalize=True):
         """
         Split the outputs into each prediction component and denormalize
-        
+
         :param preprocess_outputs (tensor): [batch_size, horizon, dim]
         :return: AttrDict
         """

@@ -19,7 +19,8 @@ class JackalPositionModel(JackalModel):
         if self._is_output_gps:
             batch_size = tf.shape(preprocess_outputs)[0]
             position = tf.zeros([batch_size, 3])
-            yaw = -inputs.imu.compass_bearing[:, 0] + 0.5 * np.pi # so that east is 0 degrees
+            # yaw = -inputs.imu.compass_bearing[:, 0] + 0.5 * np.pi # so that east is 0 degrees
+            yaw = inputs.jackal.yaw[:, 0]
         else:
             position = inputs.jackal.position
             yaw = inputs.jackal.yaw[:, 0]
