@@ -184,18 +184,19 @@ class JackalEnv(Env):
             """
             batch_size, horizon, _ = xy.shape
 
-            # camera is ~0.35m above ground
-            xyz = np.concatenate([xy, -0.35 * np.ones(list(xy.shape[:-1]) + [1])], axis=-1) # 0.35
+            # camera is ~0.4m above ground
+            xyz = np.concatenate([xy, -0.4 * np.ones(list(xy.shape[:-1]) + [1])], axis=-1) # 0.4
             rvec = tvec = (0, 0, 0)
             camera_matrix = self.spec.image_intrinsics.copy()
-            k1, k2, p1, p2 = self.spec.image_distortion.ravel()
-            k3 = k4 = k5 = k6 = 0.
-            dist_coeffs = (k1, k2, p1, p2, k3, k4, k5, k6)
+            # k1, k2, p1, p2 = self.spec.image_distortion.ravel()
+            # k3 = k4 = k5 = k6 = 0.
+            # dist_coeffs = (k1, k2, p1, p2, k3, k4, k5, k6)
+            dist_coeffs = self.spec.image_distortion
 
             # x = y
             # y = -z
             # z = x
-            xyz[..., 0] += 0.15  # NOTE(greg): shift to be in front of image plane
+            xyz[..., 0] += 0.6  # NOTE(greg): shift to be in front of image plane
             xyz_cv = np.stack([xyz[..., 1], -xyz[..., 2], xyz[..., 0]], axis=-1)
             uv, _ = cv2.projectPoints(xyz_cv.reshape(batch_size * horizon, 3), rvec, tvec, camera_matrix, dist_coeffs)
             uv = uv.reshape(batch_size, horizon, 2)

@@ -21,12 +21,12 @@ class JackalEnvSpec(EnvSpec):
             )
         )
 
-        fx, fy, cx, cy = 272.547000, 266.358000, 320.000000, 240.000000
+        fx, fy, cx, cy = 384.944396973, 384.575073242, 309.668579102, 243.29864502
         self._dim = (640, 480)
         self._K = np.array([[fx, 0., cx],
                       [0., fy, cy],
                       [0., 0., 1.]])
-        self._D = np.array([[-0.038483, -0.010456, 0.003930, -0.001007]]).T
+        self._D = np.array([[-0.0548635944724, 0.0604563839734, -0.00111321196891, -4.80580529256e-05, -0.0191334541887]]).T
         self._balance = 0.5
 
     @property
@@ -69,16 +69,15 @@ class JackalEnvSpec(EnvSpec):
             return np.array([self.process_image(name, im_i) for im_i in image])
 
         if name in ('images/rgb_left', 'images/rgb_right'):
-            # NOTE: Does not require rectify image
-            # image = imrectify(image, self._K, self._D, balance=self._balance)
-            pass
+            image = imrectify(image, self._K, self._D, balance=self._balance)
 
         return super(JackalEnvSpec, self).process_image(name, image)
 
     @property
     def image_intrinsics(self):
-        return cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(
-            self._K, self._D, self._dim, np.eye(3), balance=self._balance)
+        # return cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(
+        #     self._K, self._D, self._dim, np.eye(3), balance=self._balance)
+        return self._K
 
     @property
     def image_distortion(self):
