@@ -170,7 +170,7 @@ def get_params():
     dataset_params = get_dataset_params(env_spec, horizon, trainer_params.batch_size)
 
     return d(
-        exp_name='own/trained_model/bumpy-aug10-neutral',
+        exp_name='own/trained_model/bumpy-aug20',
         dataset=dataset_params,
         model=model_params,
         trainer=trainer_params,
