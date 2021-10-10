@@ -82,7 +82,8 @@ class JackalEnv(Env):
         # subscribe_names.add('joy')
         self._jackal_subscriber = JackalSubscriber(names=subscribe_names)
 
-        self._goal_latlong = np.array([39.327793, -76.620604])
+        # self._goal_latlong = np.array([39.327793, -76.620604])  # Levering Hall
+        self._goal_latlong = np.array([39.326907, -76.622058])  # Decker Quad
 
     def _goal_callback(self, msg):
         self._goal_latlong = np.array([msg.x, msg.y])
@@ -135,7 +136,7 @@ class JackalEnv(Env):
             # 'joy'
         ]
         obs = AttrDict.from_dict(self._jackal_subscriber.get(names=names))
-        is_collision = False #NOTE obs.collision.any
+        is_collision = False  # NOTE obs.collision.any
         is_close_to_goal = np.linalg.norm(latlong_to_utm(self._goal_latlong) - latlong_to_utm(obs.gps.latlong)) < 2.0
         return is_collision or is_close_to_goal
 

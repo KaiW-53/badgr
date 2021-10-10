@@ -39,12 +39,18 @@ class GPSPlotter(object):
     """
     Lots taken from: https://stackoverflow.com/questions/7490491/capture-embedded-google-map-image-with-python
     """
+    # Decker Quad
+    # nw_latlong=(39.326907, -76.622058),
+    # se_latlong=(39.326066, -76.621005),
+    # Levering Hall
+    # nw_latlong=(39.328555, -76.621903),
+    # se_latlong=(39.327793, -76.620604),
 
     def __init__(self,
-                 nw_latlong=(39.328555, -76.621903),
-                 se_latlong=(39.327793, -76.620604),
+                 nw_latlong=(39.326907, -76.622058),
+                 se_latlong=(39.326066, -76.621005),
                  zoom=19,
-                 satellite_img_fname=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rfs_satellite.png'),
+                 satellite_img_fname=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'decker-quad.png'),
                  google_maps_api_key="AIzaSyAd-cxHGRZ_j-VtrZ_tw7W9oGuOe5KKJmU"):
         self.nw_latlong = nw_latlong
         self.se_latlong = se_latlong

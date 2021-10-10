@@ -17,7 +17,7 @@ class JackalEnvSpec(EnvSpec):
                 ('bumpy', (1,), (0, 1), np.bool),
                 # NOTE: eval limit has to change correspondingly
                 ('commands/angular_velocity', (1,), (-1.5, 1.5), np.float32),
-                ('commands/linear_velocity', (1,), (0.0, 3.0), np.float32)
+                ('commands/linear_velocity', (1,), (0.0, 1.5), np.float32)
             )
         )
 
@@ -98,7 +98,7 @@ class JackalPositionCollisionEnvSpec(JackalEnvSpec):
             'jackal/position',
             'jackal/yaw',
 
-            'collision/close',  # NOTE: only required for training
+            # 'collision/close',  # NOTE: only required for training
         ]
         if not self._left_image_only:
             names.append('images/rgb_right')
@@ -115,11 +115,6 @@ class JackalBumpyEnvSpec(JackalEnvSpec):
     def observation_names(self):
         names = [
             'images/rgb_left',
-
-            'jackal/imu/angular_velocity',
-            'jackal/imu/linear_acceleration',
-            'imu/angular_velocity',
-            'imu/linear_acceleration',
 
             'bumpy',
         ]

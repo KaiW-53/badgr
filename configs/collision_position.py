@@ -189,7 +189,7 @@ def get_params():
     dataset_params = get_dataset_params(env_spec, horizon, trainer_params.batch_size)
 
     return d(
-        exp_name='own/trained_model/collision_position-augment-20',
+        exp_name='own/trained_model/collision_position-aug20',
 
         dataset=dataset_params,
         model=model_params,

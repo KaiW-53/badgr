@@ -21,7 +21,7 @@ def get_model_params():
                 os.path.join(FileManager.configs_dir, 'collision_position.py'),
             ),
             ckptnums=(
-                4,
+                2,
                 8,
             )
         )
@@ -100,7 +100,7 @@ def get_planner_params(env_spec):
             action_selection_limits=d(
                 commands=d(
                     angular_velocity=(-1., 1.),
-                    linear_velocity=(2, 2),
+                    linear_velocity=(1, 1),  # NOTE: action selection limit
                 )
             ),
             cost_fn=cost_fn,
