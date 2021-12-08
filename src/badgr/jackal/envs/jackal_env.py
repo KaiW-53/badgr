@@ -36,8 +36,8 @@ class JackalEnv(Env):
         plt.rcParams["font.weight"] = "bold"
         plt.rcParams["axes.labelweight"] = "bold"
 
-        self._debug_fig, ((ax_sat, ax_satzoom, ax_fpv), (ax_egobirdseye, ax_steer, ax_speed)) = \
-            plt.subplots(2, 3, figsize=(35, 10))
+        self._debug_fig, ((ax_sat, ax_satzoom, ax_fpv), (ax_egobirdseye, ax_steer, ax_egobirdseye_pred), (ax_speed, _, _)) = \
+            plt.subplots(3, 3, figsize=(18, 12))
 
         self._gps_plotter = GPSPlotter()
 
@@ -62,6 +62,9 @@ class JackalEnv(Env):
         self._pyblit_egobirdseye_batchline = pyblit.BatchLineCollection(ax_egobirdseye)
         self._pyblit_egobirdseye_ax = pyblit.Axis(ax_egobirdseye, [self._pyblit_egobirdseye_batchline])
 
+        self._pyblit_egobirdseye_pred_batchline = pyblit.BatchLineCollection(ax_egobirdseye_pred)
+        self._pyblit_egobirdseye_pred_ax = pyblit.Axis(ax_egobirdseye_pred, [self._pyblit_egobirdseye_pred_batchline])
+
         self._pyblit_steer_bar = pyblit.Barh(ax_steer)
         self._pyblit_steer_ax = pyblit.Axis(ax_steer, [self._pyblit_steer_bar])
 
@@ -83,7 +86,7 @@ class JackalEnv(Env):
         self._jackal_subscriber = JackalSubscriber(names=subscribe_names)
 
         # self._goal_latlong = np.array([39.327793, -76.620604])  # Levering Hall
-        self._goal_latlong = np.array([39.326907, -76.622058])  # Decker Quad
+        self._goal_latlong = np.array([39.326907, -76.621543])  # Decker Quad
 
     def _goal_callback(self, msg):
         self._goal_latlong = np.array([msg.x, msg.y])
@@ -256,6 +259,27 @@ class JackalEnv(Env):
         ax.set_title('candidate plans', fontweight='bold')
         self._pyblit_egobirdseye_ax.draw()
 
+    def _plot_ego_birdseye_pred(self, positions_pred, colors, xlim=(-1.3, 1.3), ylim=(-0.1, 2.0)):
+        _, horizon, _ = positions_pred.shape
+        xlim = (horizon / 8.) * np.array(xlim)
+        ylim = (horizon / 8.) * np.array(ylim)
+        x_pred_list, y_pred_list = [], []
+        for pred_pos in positions_pred:
+            forward_is_up = np.array([[0., -1.], [1., 0.]])
+            positions_pred_in_origin = forward_is_up.dot(pred_pos.T).T
+
+            x_pred_list.append(positions_pred_in_origin[:, 0])
+            y_pred_list.append(positions_pred_in_origin[:, 1])
+        self._pyblit_egobirdseye_pred_batchline.draw(x_pred_list, y_pred_list, color=colors)
+        ax = self._pyblit_egobirdseye_pred_ax.ax
+        ax.set_xlim(1.0 * np.array(xlim))
+        ax.set_ylim(1.0 * np.array(ylim))
+        ax.set_aspect('equal')
+        ax.set_xlabel('meters')
+        ax.set_ylabel('meters')
+        ax.set_title('predicted plans', fontweight='bold')
+        self._pyblit_egobirdseye_pred_ax.draw()
+
     def _plot_steer(self, get_action):
         steers = -get_action.action_sequence.commands.angular_velocity.ravel().copy()
         steers[0] = -get_action.action.commands.angular_velocity
@@ -297,16 +321,25 @@ class JackalEnv(Env):
         all_costs_per_timestep = get_action.all_costs_per_timestep
         all_positions = commands_to_positions(get_action.all_actions.commands.linear_velocity[..., 0],
                                               get_action.all_actions.commands.angular_velocity[..., 0])
+        all_positions_pred = get_action.all_model_outputs.jackal.local_position
+        N = all_positions_pred.shape[0]
+        all_positions_pred = np.concatenate([np.zeros((N, 1, 2)), all_positions_pred[..., :2]], axis=1)
+
+        pos_diff = all_positions_pred - all_positions
+        pos_mean = np.mean(np.sum(0.5 * np.square(pos_diff), axis=(1, 2)))
+        print(pos_mean)
 
         sorted_idxs = np.argsort(all_costs)[::-1]
         all_costs = all_costs[sorted_idxs]
         all_costs_per_timestep = all_costs_per_timestep[self._debug_color_cost_key][sorted_idxs]
         all_positions = all_positions[sorted_idxs]
+        all_positions_pred = all_positions_pred[sorted_idxs]
 
         subsample_idxs = np.linspace(0, len(all_costs) - 1, self._debug_N_rollouts).astype(int)
         costs = all_costs[subsample_idxs]
         costs_per_timestep = all_costs_per_timestep[subsample_idxs]
         positions = all_positions[subsample_idxs]
+        positions_pred = all_positions_pred[subsample_idxs]
 
         batch_size, horizon = costs_per_timestep.shape
         color_costs = costs_per_timestep if use_per_timestep_costs else np.tile(costs[..., np.newaxis], (1, horizon))
@@ -325,6 +358,7 @@ class JackalEnv(Env):
         self._plot_satellite(obs, positions, colors, goal)
         self._plot_fpv(obs, positions, colors)
         self._plot_ego_birdseye(positions, colors)
+        self._plot_ego_birdseye_pred(positions_pred, colors)
         self._plot_steer(get_action)
         self._plot_speed(get_action)
 

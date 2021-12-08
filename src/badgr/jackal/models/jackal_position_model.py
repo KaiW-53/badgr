@@ -31,6 +31,7 @@ class JackalPositionModel(JackalModel):
 
         outputs = AttrDict()
         outputs.add_recursive('jackal/position', output_positions)
+        outputs.add_recursive('jackal/local_position', preprocess_outputs)
 
         return outputs
 
@@ -44,4 +45,5 @@ class JackalPositionModel(JackalModel):
 
         outputs = model_outputs
         outputs.jackal.position = position_model_outputs.jackal.position
+        outputs.jackal.local_position = position_model_outputs.jackal.local_position
         return outputs

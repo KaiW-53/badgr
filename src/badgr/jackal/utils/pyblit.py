@@ -257,4 +257,3 @@ if __name__ == '__main__':
         if not is_shown:
             plt.show(block=False)
             plt.pause(0.1)
-
