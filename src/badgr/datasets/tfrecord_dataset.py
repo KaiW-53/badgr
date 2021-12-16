@@ -85,7 +85,7 @@ class TfrecordDataset(Dataset):
     def _filter_out_input_nans(self, dataset):
         return dataset.filter(
             lambda x: tf.reduce_all([tf.reduce_all(tf.is_finite(tensor)) for key, tensor in x.items()
-                                     if key.startswith('inputs/') and tensor.dtype != tf.uint8]))
+                                     if key.startswith('inputs/') and tensor.dtype != tf.uint16 and tensor.dtype != tf.uint8]))
 
     def _load_tfrecords(self):
         logger.debug('Loading tfrecords...')

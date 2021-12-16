@@ -14,12 +14,15 @@ from badgr.utils.python_utils import AttrDict as d
 ###############
 
 def get_dataset_params(env_spec, horizon, batch_size):
+    #all_tfrecord_folders = [
+    #    os.path.join(FileManager.data_dir, 'own/circles/{0}'.format(f)) for f in
+    #    ['21-03-17', '21-04-02', '21-04-25', '21-05-02', 'holdout']
+    #]
     all_tfrecord_folders = [
-        os.path.join(FileManager.data_dir, 'own/circles/{0}'.format(f)) for f in
-        ['21-03-17', '21-04-02', '21-04-25', '21-05-02', 'holdout']
-    ]
-    train_tfrecord_folders = [fname for fname in all_tfrecord_folders if 'holdout' not in fname],
-    holdout_tfrecord_folders = [fname for fname in all_tfrecord_folders if 'holdout' in fname],
+        os.path.join(FileManager.data_dir, 'tfrecords_collision_test/12-19-47')
+        ]
+    train_tfrecord_folders = [fname for fname in all_tfrecord_folders] #if 'holdout' not in fname],
+    holdout_tfrecord_folders = [fname for fname in all_tfrecord_folders]# if 'holdout' in fname],
 
     kwargs_train = d(
         rebalance_key='outputs/collision/close',

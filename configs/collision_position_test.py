@@ -3,8 +3,8 @@ import tensorflow as tf
 
 from badgr.file_manager import FileManager
 from badgr.datasets.tfrecord_rebalance_dataset import TfrecordRebalanceDataset
-from badgr.jackal.envs.jackal_env_specs import JackalBumpyEnvSpec
-from badgr.jackal.models.jackal_model import JackalModel
+from badgr.jackal.envs.jackal_env_specs import JackalPositionCollisionEnvSpec
+from badgr.jackal.models.jackal_position_model import JackalPositionModel
 from badgr.utils.python_utils import AttrDict as d
 
 
@@ -15,18 +15,20 @@ from badgr.utils.python_utils import AttrDict as d
 
 def get_dataset_params(env_spec, horizon, batch_size):
     all_tfrecord_folders = [
-        os.path.join(FileManager.data_dir, 'own/bumpy/{0}'.format(f)) for f in
-        ['21-09-13', '21-09-20', '21-09-28', 'holdout']
+        os.path.join(FileManager.data_dir, 'tfrecords_collision_depth_test/{0}'.format(f)) for f in
+        ['21-03-17', '21-04-02', '21-04-25', '21-05-02', 'holdout']
     ]
+    #all_tfrecord_folders = [
+    #    os.path.join(FileManager.data_dir, 'tfrecords_collision_rgbd/12-19-47')
+    #    ]
     train_tfrecord_folders = [fname for fname in all_tfrecord_folders if 'holdout' not in fname],
     holdout_tfrecord_folders = [fname for fname in all_tfrecord_folders if 'holdout' in fname],
 
     kwargs_train = d(
+        rebalance_key='outputs/collision/close',
+
         env_spec=env_spec,
         tfrecord_folders=train_tfrecord_folders,
-
-        rebalance_key='outputs/bumpy',
-        rebalance_logical_not=True,
 
         horizon=horizon,
         batch_size=batch_size,
@@ -53,7 +55,10 @@ def get_dataset_params(env_spec, horizon, batch_size):
 
 def get_model_params(env_spec, horizon):
     kwargs_train = d(
+            # jackal mode
             use_both_images=False,
+            use_depth_only = False,
+            use_depth_and_rgb = True,
 
             # RNN
             horizon=horizon,
@@ -63,7 +68,11 @@ def get_model_params(env_spec, horizon):
             env_spec=env_spec,
             output_observations=[
                 d(
-                    name='bumpy',
+                    name='jackal/position',
+                    is_relative=True
+                ),
+                d(
+                    name='collision/close',
                     is_relative=False
                 )
             ],
@@ -72,9 +81,10 @@ def get_model_params(env_spec, horizon):
         )
 
     kwargs_eval = kwargs_train.copy()
+    kwargs_eval.is_output_gps = True
 
     return d(
-        cls=JackalModel,
+        cls=JackalPositionModel,
         kwargs_train=kwargs_train,
         kwargs_eval=kwargs_eval
     )
@@ -94,55 +104,69 @@ def get_trainer_params():
         mask = tf.cast(tf.logical_not(done), tf.float32)
         tf.debugging.assert_positive(tf.reduce_sum(mask, axis=1))
         mask = batch_size_float * (mask / tf.reduce_sum(mask))
+        mask = mask[..., tf.newaxis]
 
+        ### position
 
-        ### bumpy
-
-        model_output_bumpy = model_outputs.bumpy[..., 0]
-        bumpy = tf.cast(outputs.bumpy, tf.bool)[..., 0]
-
-        cost_bumpy = tf.reduce_sum(
-            mask * tf.nn.weighted_cross_entropy_with_logits(targets=tf.cast(bumpy, tf.float32),
-                                                            logits=model_output_bumpy,
-                                                            pos_weight=0.2),
-            axis=1
+        cost_position = tf.reduce_sum(
+            mask * 0.5 * tf.square(model_outputs.jackal.position - outputs.jackal.position),
+            axis=(1, 2)
         )
 
-        bumpy_accuracy = tf.reduce_mean(tf.cast(tf.equal(model_output_bumpy > 0,
-                                                         tf.cast(bumpy, tf.bool)),
+        ### collision
+
+        model_output_collision = model_outputs.collision.close[..., 0]
+
+        collision = tf.cast(outputs.collision.close, tf.bool)[..., 0]
+        collision = tf.logical_and(collision, tf.logical_not(done)) # don't count collisions after done!
+        collision = tf.cumsum(tf.cast(collision, tf.float32), axis=-1) > 0.5
+
+        # collision mask should be same as normal mask, but turned on for dones with collision = true
+        mask_collision = tf.cast(tf.logical_or(tf.logical_not(done), collision), tf.float32)
+        mask_collision = batch_size_float * (mask_collision / tf.reduce_sum(mask_collision))
+
+        cost_collision = 2.0 * tf.reduce_sum(
+            mask_collision * tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.cast(collision, tf.float32),
+                                                                     logits=model_output_collision),
+            axis=1
+        )
+        collision_accuracy = tf.reduce_mean(tf.cast(tf.equal(model_output_collision > 0,
+                                                             tf.cast(collision, tf.bool)),
                                                     tf.float32),
                                             axis=1)
-        bumpy_accuracy_random = tf.reduce_mean(1. - tf.cast(bumpy, tf.float32), axis=1)
+        collision_accuracy_random = tf.reduce_mean(1. - tf.cast(collision, tf.float32), axis=1)
 
         ### regularization
 
-        cost_l2_reg = 1e-1 * \
+        cost_l2_reg = 1e-2 * \
                       tf.reduce_mean([0.5 * tf.reduce_mean(kernel * kernel) for kernel in model_outputs.kernels]) * \
                       tf.ones(batch_size)
 
         ### filter out nans
 
-        costs_is_finite = tf.is_finite(cost_bumpy)
-        cost_bumpy = tf.boolean_mask(cost_bumpy, costs_is_finite)
+        costs_is_finite = tf.logical_and(tf.is_finite(cost_position), tf.is_finite(cost_collision))
+        cost_position = tf.boolean_mask(cost_position, costs_is_finite)
+        cost_collision = tf.boolean_mask(cost_collision, costs_is_finite)
         cost_l2_reg = tf.boolean_mask(cost_l2_reg, costs_is_finite)
         # assert cost_l2_reg.shape[0].value > 0.5 * batch_size
 
         ### total
 
-        cost = cost_bumpy + cost_l2_reg
+        cost = cost_position + cost_collision + cost_l2_reg
 
         return d(
             total=cost,
-            bumpy=cost_bumpy,
-            bumpy_accuracy=bumpy_accuracy,
-            bumpy_accuracy_random=bumpy_accuracy_random,
+            position=cost_position,
+            collision=cost_collision,
+            collision_accuracy=collision_accuracy,
+            collision_accuracy_random=collision_accuracy_random,
             l2_reg=cost_l2_reg
         )
 
 
     return d(
         # steps
-        max_steps=1e5,
+        max_steps=2e5,
         holdout_every_n_steps=50,
         log_every_n_steps=1e3,
         save_every_n_steps=1e4,
@@ -163,14 +187,15 @@ def get_trainer_params():
 def get_params():
     horizon = 8
 
-    env_spec = JackalBumpyEnvSpec(left_image_only=True)
+    env_spec = JackalPositionCollisionEnvSpec(left_image_only=True)
 
     model_params = get_model_params(env_spec, horizon)
     trainer_params = get_trainer_params()
     dataset_params = get_dataset_params(env_spec, horizon, trainer_params.batch_size)
 
     return d(
-        exp_name='own/trained_model/bumpy',
+        exp_name='own/trained_model/collision_position_rgbd',
+
         dataset=dataset_params,
         model=model_params,
         trainer=trainer_params,

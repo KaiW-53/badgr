@@ -10,6 +10,8 @@ class JackalEnvSpec(EnvSpec):
     def __init__(self):
         super(JackalEnvSpec, self).__init__(
             names_shapes_limits_dtypes=(
+                ('images/rgb_left_depth', (96, 128, 1), (0, 65535), np.uint16),
+                ('images/rgb_left_rgbd', (96, 128, 4), (0, 65535), np.uint16),
                 ('images/rgb_left', (96, 128, 3), (0, 255), np.uint8),
                 ('collision/close', (1,), (0, 1), np.bool),
                 ('jackal/position', (3,), (-0.5, 0.5), np.float32),
@@ -33,6 +35,8 @@ class JackalEnvSpec(EnvSpec):
     def observation_names(self):
         return (
             'images/rgb_left',
+            'images/rgb_left_depth',
+            'images/rgb_left_rgbd',
             'images/rgb_right',
             'images/thermal',
             'collision/close',
@@ -68,8 +72,11 @@ class JackalEnvSpec(EnvSpec):
         if len(image.shape) == 4:
             return np.array([self.process_image(name, im_i) for im_i in image])
 
-        if name in ('images/rgb_left', 'images/rgb_right'):
+        if name in ('images/rgb_left', 'images/rgb_left_depth', 'images/rgb_right'):
             image = imrectify(image, self._K, self._D, balance=self._balance)
+        
+        if (name == 'images/rgb_left_depth'):
+            return super(JackalEnvSpec, self).process_depth_image(name, image)
 
         return super(JackalEnvSpec, self).process_image(name, image)
 
@@ -93,12 +100,14 @@ class JackalPositionCollisionEnvSpec(JackalEnvSpec):
     @property
     def observation_names(self):
         names = [
+            'images/rgb_left_depth',
             'images/rgb_left',
+            'images/rgb_left_rgbd',
 
             'jackal/position',
             'jackal/yaw',
 
-            # 'collision/close',  # NOTE: only required for training
+            'collision/close',  # NOTE: only required for training
         ]
         if not self._left_image_only:
             names.append('images/rgb_right')

@@ -33,6 +33,25 @@ def imresize(image, shape, resize_method=PIL.Image.LANCZOS):
 
     return im
 
+def depth_imresize(image, shape, resize_method=cv2.INTER_LANCZOS4):
+    assert (len(shape) == 3)
+    assert (shape[-1] == 1 or shape[-1] == 3 or shape[-1] == 4)
+    assert (image.shape[0] / image.shape[1] == shape[0] / shape[1]) # maintain aspect ratio
+    height, width, channels = shape
+
+    if len(image.shape) > 2 and image.shape[2] == 1:
+        image = image[:,:,0]
+
+    im = cv2.resize(image, (width, height), interpolation = resize_method)
+
+    if len(im.shape) == 2:
+        im = np.expand_dims(im, 2)
+
+    assert (im.shape == tuple(shape))
+    assert (im.dtype == np.uint16)
+
+    return im
+
 
 def yaw_rotmat(yaw):
     return np.array([[np.cos(yaw), -np.sin(yaw), 0.],

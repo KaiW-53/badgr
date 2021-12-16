@@ -7,13 +7,25 @@ class JackalModel(Model):
 
     def __init__(self, params):
         self._use_both_images = params.get('use_both_images', True)
+        self._use_depth_only = params.get('use_depth_only', False)
+        self._use_depth_and_rgb = params.get('use_depth_and_rgb', False)
 
         super(JackalModel, self).__init__(params)
 
     def get_obs_lowd(self, inputs, training=False):
         obs_ims, obs_vecs = self._preprocess_observation_inputs(inputs)
+        
+        if self._use_depth_and_rgb:
+            rgb_left = obs_ims.get_recursive('images/rgb_left_rgbd')
+        elif self._use_depth_only:
+            rgb_left = obs_ims.get_recursive('images/rgb_left_depth')
+        else:
+            rgb_left = obs_ims.get_recursive('images/rgb_left')
+        #try:
+        #    rgb_left = obs_ims.get_recursive('images/rgb_left_depth')
+        #except AssertionError:
+        #    rgb_left = obs_ims.get_recursive('images/rgb_left')
 
-        rgb_left = obs_ims.get_recursive('images/rgb_left')
         if self._use_both_images:
             rgb_right = obs_ims.get_recursive('images/rgb_right')
             obs_ims_concat = tf.concat([rgb_left, rgb_left - rgb_right], axis=-1)

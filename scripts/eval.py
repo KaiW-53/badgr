@@ -4,6 +4,8 @@ import numpy as np
 import os
 import rospy
 
+import sys, select
+
 from badgr.file_manager import FileManager
 from badgr.utils.python_utils import exit_on_ctrl_c, import_config
 from badgr.utils import tf_utils
@@ -41,14 +43,35 @@ exit_on_ctrl_c()
 
 done = True
 num_dones = -1
+
+#pos = []
+#ang_v = []
+#lin_v = []
+#yaw = []
+
 while num_dones < args.num_dones:
     if done:
         obs, goal = env.reset()
         num_dones += 1
         logger.info('num_dones: {0}'.format(num_dones))
-
+    
+    #pos.append(obs.jackal.position)
+    #yaw.append(obs.jackal.yaw)
     get_action = planner.get_action(model, obs, goal)
     obs, goal, done = env.step(get_action)
+    #ang_v.append(get_action.action_sequence.commands.angular_velocity)
+    #lin_v.append(get_action.action_sequence.commands.linear_velocity)
+    
 
-logger.info('Eval is done')
+    #if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+        #line = raw_input()
+       # break
+
+#pos = np.array(pos)
+#yaw = np.array(yaw)
+#ang_v = np.array(ang_v)
+#lin_v = np.array(lin_v)
+#np.savez("obs_2021-07-15-17-33-17.npz", pos=pos,yaw=yaw,ang_v=ang_v,lin_v=lin_v)
+
+#logger.info('Eval is done')
 rospy.signal_shutdown(0)

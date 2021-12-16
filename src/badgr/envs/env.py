@@ -1,6 +1,6 @@
 import numpy as np
 
-from badgr.utils.np_utils import imresize
+from badgr.utils.np_utils import imresize, depth_imresize
 from badgr.utils.python_utils import AttrDict
 
 
@@ -98,6 +98,15 @@ class EnvSpec(object):
             return np.array([self.process_image(name, im_i) for im_i in image])
 
         return imresize(image, self.names_to_shapes.get_recursive(name))
+    
+    def process_depth_image(self, name, image):
+        """
+        Default behavior: resize the depth or rgbd image
+        """
+        if len(image.shape) == 4:
+            return np.array([self.process_depth_image(name, im_i) for im_i in image])
+
+        return depth_imresize(image, self.names_to_shapes.get_recursive(name))
 
 
 

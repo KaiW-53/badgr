@@ -18,10 +18,10 @@ def get_model_params():
     kwargs_train = d(
             config_fnames=(
                 os.path.join(FileManager.configs_dir, 'bumpy.py'),
-                os.path.join(FileManager.configs_dir, 'collision_position.py'),
+                os.path.join(FileManager.configs_dir, 'collision_position_test.py'),
             ),
             ckptnums=(
-                4,
+                8,
                 8,
             )
         )

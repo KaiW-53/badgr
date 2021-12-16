@@ -14,6 +14,8 @@ from badgr.jackal.utils.jackal_subscriber import JackalSubscriber
 from badgr.utils.np_utils import yaw_rotmat
 from badgr.utils.python_utils import AttrDict, Rate
 
+import copy
+
 
 class JackalEnv(Env):
 
@@ -36,7 +38,10 @@ class JackalEnv(Env):
         plt.rcParams["font.weight"] = "bold"
         plt.rcParams["axes.labelweight"] = "bold"
 
-        self._debug_fig, ((ax_sat, ax_satzoom, ax_fpv), (ax_egobirdseye, ax_steer, ax_speed)) = \
+        #self._debug_fig, ((ax_sat, ax_satzoom, ax_fpv), (ax_egobirdseye, ax_steer, ax_speed)) = \
+        #    plt.subplots(2, 3, figsize=(35, 10))
+
+        self._debug_fig, ((ax_sat, ax_satzoom, ax_fpv), (ax_egobirdseye, ax_steer, ax_depth)) = \
             plt.subplots(2, 3, figsize=(35, 10))
 
         self._gps_plotter = GPSPlotter()
@@ -59,14 +64,18 @@ class JackalEnv(Env):
         self._pyblit_fpv_batchline = pyblit.BatchLineCollection(ax_fpv)
         self._pyblit_fpv_ax = pyblit.Axis(ax_fpv, [self._pyblit_fpv_imshow, self._pyblit_fpv_batchline])
 
+        self._pyblit_depth_imshow = pyblit.Imshow(ax_depth)
+        #self._pyblit_depth_batchline = pyblit.BatchLineCollection(ax_depth)
+        self._pyblit_depth_ax = pyblit.Axis(ax_depth, [self._pyblit_depth_imshow])
+
         self._pyblit_egobirdseye_batchline = pyblit.BatchLineCollection(ax_egobirdseye)
         self._pyblit_egobirdseye_ax = pyblit.Axis(ax_egobirdseye, [self._pyblit_egobirdseye_batchline])
 
         self._pyblit_steer_bar = pyblit.Barh(ax_steer)
         self._pyblit_steer_ax = pyblit.Axis(ax_steer, [self._pyblit_steer_bar])
 
-        self._pyblit_speed_bar = pyblit.Bar(ax_speed)
-        self._pyblit_speed_ax = pyblit.Axis(ax_speed, [self._pyblit_speed_bar])
+        #self._pyblit_speed_bar = pyblit.Bar(ax_speed)
+        #self._pyblit_speed_ax = pyblit.Axis(ax_speed, [self._pyblit_speed_bar])
 
         self._is_first_debug = True
 
@@ -101,6 +110,13 @@ class JackalEnv(Env):
             obs.images.rgb_left = self.spec.process_image('images/rgb_left', obs.images.rgb_left)
         if 'images/rgb_right' in obs.get_leaf_keys():
             obs.images.rgb_right = self.spec.process_image('images/rgb_right', obs.images.rgb_right)
+        if 'images/rgb_left_depth' in obs.get_leaf_keys():
+            obs.images.rgb_left_depth = self.spec.process_depth_image('images/rgb_left_depth', obs.images.rgb_left_depth)
+        if 'images/rgb_left' in obs.get_leaf_keys() and 'images/rgb_left_depth' in obs.get_leaf_keys():
+            key = 'images/rgb_left_rgbd'
+            im = obs.images.rgb_left.astype(np.uint16)
+            im_rgbd = np.concatenate((im,obs.images.rgb_left_depth), axis=-1)
+            obs.add_recursive(key.split('/'), im_rgbd)
 
         obs.modify_recursive(lambda v: np.asarray(v))
 
@@ -234,6 +250,16 @@ class JackalEnv(Env):
         cax.yaxis.set_label_position('left')
 
         self._pyblit_fpv_ax.draw()
+    
+    def _plot_depth(self, obs):
+        image = copy.deepcopy(obs.images.rgb_left_depth)
+        image = image[:, : ,-1]
+        image[image>6000] = 0
+        
+        self._pyblit_depth_imshow.draw(np.flipud(image), cmap='gray', vmin = 0, vmax = 6000, origin='lower')
+        #self._pyblit_depth_imshow.draw(np.flipud(image), origin='lower')
+
+        self._pyblit_depth_ax.draw()
 
     def _plot_ego_birdseye(self, positions, colors, xlim=(-1.3, 1.3), ylim=(-0.1, 2.0)):
         _, horizon, _ = positions.shape
@@ -324,9 +350,10 @@ class JackalEnv(Env):
 
         self._plot_satellite(obs, positions, colors, goal)
         self._plot_fpv(obs, positions, colors)
+        self._plot_depth(obs)
         self._plot_ego_birdseye(positions, colors)
         self._plot_steer(get_action)
-        self._plot_speed(get_action)
+        #self._plot_speed(get_action)
 
         if self._is_first_debug:
             self._debug_fig.tight_layout(pad=1.5)

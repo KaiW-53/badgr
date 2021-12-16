@@ -15,6 +15,19 @@ def numpify_image_msg(msg):
     msg.__class__ = Image
     return ros_numpy.numpify(msg)
 
+def numpify_depth_image_msg(msg):
+    msg.__class__ = Image
+    img_d = ros_numpy.numpify(msg)
+    width, height = img_d.shape
+    img_d = np.reshape(img_d, (width, height, 1))
+    return img_d
+
+def dummy_rgbd_msg(msg):
+    msg.__class__ = Image
+    img_d = ros_numpy.numpify(msg)
+    width, height = img_d.shape
+    return np.zeros((width,height,4))
+
 
 class JackalSubscriber(object):
 
@@ -43,6 +56,8 @@ class JackalSubscriber(object):
 
         # ('/cam_left/image_raw', Image),
         ('/camera/color/image_raw', Image),
+        ('/camera/aligned_depth_to_color/image_raw', Image),
+
         ('/cam_right/image_raw', Image),
         ('/teraranger_evo_thermal/raw_temp_array', Float64MultiArray),
 
@@ -102,7 +117,12 @@ class JackalSubscriber(object):
         # ('commands/angular_velocity', '/odometry/filtered', lambda msg: msg.twist.twist.angular.z),
 
         # ('images/rgb_left', '/cam_left/image_raw', lambda msg: numpify_image_msg(msg)),
+
         ('images/rgb_left', '/camera/color/image_raw', lambda msg: numpify_image_msg(msg)),
+        ('images/rgb_left_depth', '/camera/aligned_depth_to_color/image_raw', lambda msg: numpify_depth_image_msg(msg)),
+        ('images/rgb_left_rgbd', '/camera/aligned_depth_to_color/image_raw', lambda msg: dummy_rgbd_msg(msg)),
+
+        
         # ('images/rgb_right', '/cam_left/image_raw', lambda msg: numpify_image_msg(msg)),
         # ('images/thermal', '/teraranger_evo_thermal/raw_temp_array', lambda msg: np.fliplr(np.array(msg.data).reshape(32, 32))),
 
@@ -116,6 +136,7 @@ class JackalSubscriber(object):
 
     def __init__(self, names=None):
         self._names = names or tuple(JackalSubscriber.names_to_topics.keys())
+        #self._names = tuple(JackalSubscriber.names_to_topics.keys())
         self._d_msg = dict()
 
         self._topics = set([JackalSubscriber.names_to_topics[name] for name in self._names])
