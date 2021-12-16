@@ -57,8 +57,8 @@ def get_model_params(env_spec, horizon):
     kwargs_train = d(
             # jackal mode
             use_both_images=False,
-            use_depth_only = False,
-            use_depth_and_rgb = True,
+            use_depth_only = True,
+            use_depth_and_rgb = False,
 
             # RNN
             horizon=horizon,
@@ -194,7 +194,7 @@ def get_params():
     dataset_params = get_dataset_params(env_spec, horizon, trainer_params.batch_size)
 
     return d(
-        exp_name='own/trained_model/collision_position_rgbd',
+        exp_name='own/trained_model/collision_position_depth',
 
         dataset=dataset_params,
         model=model_params,
