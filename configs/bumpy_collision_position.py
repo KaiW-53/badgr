@@ -22,7 +22,7 @@ def get_model_params():
             ),
             ckptnums=(
                 8,
-                18,
+                8,
             )
         )
 

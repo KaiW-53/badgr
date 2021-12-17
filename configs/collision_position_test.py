@@ -15,7 +15,7 @@ from badgr.utils.python_utils import AttrDict as d
 
 def get_dataset_params(env_spec, horizon, batch_size):
     all_tfrecord_folders = [
-        os.path.join(FileManager.data_dir, 'tfrecords_collision_depth_test/{0}'.format(f)) for f in
+        os.path.join(FileManager.data_dir, 'tfrecords_collision_rgbd_normalized/{0}'.format(f)) for f in
         ['21-03-17', '21-04-02', '21-04-25', '21-05-02', 'holdout']
     ]
     #all_tfrecord_folders = [
@@ -57,8 +57,8 @@ def get_model_params(env_spec, horizon):
     kwargs_train = d(
             # jackal mode
             use_both_images=False,
-            use_depth_only = True,
-            use_depth_and_rgb = False,
+            use_depth_only = False,
+            use_depth_and_rgb = True,
 
             # RNN
             horizon=horizon,
@@ -194,7 +194,7 @@ def get_params():
     dataset_params = get_dataset_params(env_spec, horizon, trainer_params.batch_size)
 
     return d(
-        exp_name='own/trained_model/collision_position_depth',
+        exp_name='own/trained_model/collision_position_rgbd_normalized',
 
         dataset=dataset_params,
         model=model_params,

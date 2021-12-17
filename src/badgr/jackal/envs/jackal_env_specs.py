@@ -13,6 +13,7 @@ class JackalEnvSpec(EnvSpec):
                 ('images/rgb_left_depth', (96, 128, 1), (0, 65535), np.uint16),
                 ('images/rgb_left_rgbd', (96, 128, 4), (0, 65535), np.uint16),
                 ('images/rgb_left', (96, 128, 3), (0, 255), np.uint8),
+                #('images/rgb_left', (96, 128, 4), (0, 65535), np.uint16),
                 ('collision/close', (1,), (0, 1), np.bool),
                 ('jackal/position', (3,), (-0.5, 0.5), np.float32),
                 ('jackal/yaw', (1,), (-np.pi, np.pi), np.float32),

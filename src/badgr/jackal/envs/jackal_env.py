@@ -114,7 +114,9 @@ class JackalEnv(Env):
             obs.images.rgb_left_depth = self.spec.process_depth_image('images/rgb_left_depth', obs.images.rgb_left_depth)
         if 'images/rgb_left' in obs.get_leaf_keys() and 'images/rgb_left_depth' in obs.get_leaf_keys():
             key = 'images/rgb_left_rgbd'
-            im = obs.images.rgb_left.astype(np.uint16)
+            im = copy.deepcopy(obs.images.rgb_left)
+            im = im.astype(np.uint16)
+            im = im * 257
             im_rgbd = np.concatenate((im,obs.images.rgb_left_depth), axis=-1)
             obs.add_recursive(key.split('/'), im_rgbd)
 
